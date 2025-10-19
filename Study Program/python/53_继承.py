@@ -45,7 +45,7 @@ class XiaoTianQuan(Dog):  # 父类 -->  子类  -->  子类  --> ...可以一直
         print("ao wu...")  # 重新编写的代码
         # 调用父类两种方法
         super().bark()  # 使用super().函数可以在需要时调用父类方法
-        Dog.bark(self)  # 旧版本中想要调用父类只能用"父类.方法(self)来写"
+        Dog.bark(self)  # 旧版本中想要调用父类只能用"父类.方法(self)来写",必须写self
 
         print("!@#$#%^&*(*&^%$#@")  # 其他代码
 
