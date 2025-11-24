@@ -1,0 +1,10 @@
+安装pyinstaller，安装指令：pip install pyinstaller
+1，切换到打包程序目录
+例：需要打包程序目录为：D:\automation\autotest_tool\interface_param_change_tool
+
+切换指令：cd D:\automation\autotest_tool\interface_param_change_tool
+2，打包文件，pyinstaller -F -W xxx.py（xxx.py，打包的文件）
+例，打包文件为：runer.py
+3，到打包文件目录查看打包好的程序，并执行
+（1）打包成功后项目中新增dist文件
+（2）进入dist文件，点击运行打包好的exe程序

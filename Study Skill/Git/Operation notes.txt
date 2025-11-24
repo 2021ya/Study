@@ -1,0 +1,6 @@
+第一步：创建仓库文件夹
+第二步：初始化name和email执行以下命令初始化配置（注意改成自己的姓名和邮箱）
+		$ git config --global user.name "John Doe"
+		$ git config --global user.email johndoe@example.com
+第三步：在仓库文件夹目录右键打开git bash，执行“git init”命令初始化仓库（这个仓库可能是隐藏文件）
+第四步：创建文件
