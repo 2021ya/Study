@@ -1,4 +1,3 @@
-import time
 import UI  # 导入UI界面
 import logic  # 导入程序逻辑
 

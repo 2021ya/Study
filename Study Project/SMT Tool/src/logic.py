@@ -26,11 +26,14 @@ class Time(object):
     """时间操作类，包括所有时间的操作"""
     def __init__(self):
         self.now_time = None
-        self.tuple_time = time.localtime()
 
     def time(self):
-        self.now_time = "%04d-%02d-%02d %02d:%02d:%02d" % (self.tuple_time[0], self.tuple_time[1], self.tuple_time[2], self.tuple_time[3], self.tuple_time[4], self.tuple_time[5])
+        tuple_time = time.localtime()  # 不放在初始化中，这样每次调用这个函数都是最新时间
+        self.now_time = "%04d-%02d-%02d %02d:%02d:%02d" % (tuple_time[0], tuple_time[1], tuple_time[2], tuple_time[3], tuple_time[4], tuple_time[5])
         return self.now_time  # 返回当前日期(精度为秒)
+
+    def update_time(self):
+        pass
 
 
 class Log(object):
