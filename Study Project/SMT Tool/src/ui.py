@@ -1,4 +1,4 @@
-import tkinter  # 导入UI总包
+import tkinter  # 导入tkinter总包
 from tkinter import messagebox  # 导入弹窗组件包
 import logic
 

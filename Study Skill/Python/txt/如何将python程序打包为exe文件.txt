@@ -3,7 +3,10 @@
 例：需要打包程序目录为：D:\automation\autotest_tool\interface_param_change_tool
 
 切换指令：cd D:\automation\autotest_tool\interface_param_change_tool
-2，打包文件，pyinstaller -F -W xxx.py（xxx.py，打包的文件）
+2，打包文件，pyinstaller -F -W xxx.py（xxx.py，打包的文件）  依赖包自己就打包了
+
+执行打包命令： pyinstaller -F -w -i your_icon.ico xxx.py 其中： -F 参数表示生成一个独立的可执行文件。 -w 参数表示不显示命令行窗口。 -i 参数用于指定exe文件的图标。
+
 例，打包文件为：runer.py
 3，到打包文件目录查看打包好的程序，并执行
 （1）打包成功后项目中新增dist文件
