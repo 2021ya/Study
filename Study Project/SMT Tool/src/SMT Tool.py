@@ -11,6 +11,7 @@ class Main(object):
         self.ui = ui.UI()  # ui
         self.file = logic.File()  # 文件操作
         self.log = logic.Log()  # 日志
+        self.database = logic.Database()  # 数据库
 
     def main(self):
         self.ui.main()

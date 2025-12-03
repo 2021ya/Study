@@ -183,7 +183,7 @@ def combo():
     print("choose:", intvar1.get(), intvar2.get())
 
     # 创建列表框
-    listbox1 = (tkinter.Listbox(window_1_1_1, font=("黑体", 24), width=10, height=10))
+    listbox1 = tkinter.Listbox(window_1_1_1, font=("黑体", 24), width=10, height=10)
     listbox1.place(x=200, y=100, width=200, height=75)  # 不可以一边布局一边追加元素，分开写列表与布局，然后才能添加元素
     listbox1.insert(END, "132")  # 这里只能传字符串,第一个为固定，第二个为元素，使用insert来追加数据，提交一次一行数据
 
