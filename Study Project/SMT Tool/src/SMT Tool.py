@@ -7,11 +7,11 @@ class Main(object):
 
     def __init__(self):
         """初始化程序"""
-        # 类初始化
+        # 程序类初始化
         self.ui = ui.UI()  # ui
+        # 文件类初始化
         self.file = logic.File()  # 文件操作
         self.log = logic.Log()  # 日志
-        self.database = logic.Database()  # 数据库
 
     def main(self):
         self.ui.main()

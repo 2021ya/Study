@@ -8,15 +8,16 @@ class File(object):
 
     def __init__(self):
 
-        self.log = Log()
         # 判断程序目录是否存在
         if not os.path.exists(r"./data"):
             try:
                 os.makedirs(r"./data")  # 存放程序数据
                 os.makedirs(r"./data/databases")  # 存放数据库
                 os.makedirs(r"./data/log")  # 存放日志
+                self.log = Log()
                 self.log.write_log("目录初始化成功...")
             except Exception as e:
+                self.log = Log()
                 self.log.write_log("初始化失败,请检查文件的读取权限...")
                 self.log.write_log("Directory init error:{}".format(e))
 
@@ -78,11 +79,10 @@ class Database(object):
         sql = "create table if not exists schedule(id integer auto_increment primary key unique not null, schedule text(150), time text(20), timestamp integer, finish integer default 0)"
         try:
             self.cursor.execute(sql)
-            print("Database create success")
             self.db.commit()
         except Exception as e:
             print("Database init failed:{}".format(e))
-            self.log.write_log("<system>:Database init failed:{}".format(e))
+            self.log.write_log("Database init failed:{}".format(e))
             self.db.rollback()
 
     def insert_data(self, data):
@@ -96,10 +96,10 @@ class Database(object):
             self.log.write_log("{}:Insert data success".format("<system>"))
             return "Insert data success"
         except Exception as e:
-            self.log.write_log("{}:Insert data failed,[{}]".format(self.time.time(), e))
-            print("{}:Insert data failed,[{}]".format("<system>", e))
+            self.log.write_log("Insert data failed,[{}]".format(e))
+            print("Insert data failed,[{}]".format(e))
             self.db.rollback()
-            return "{}:Insert data failed,[{}]".format("<system>", e)
+            return "Insert data failed,[{}]".format(e)
 
     def select_data(self, data):
         pass
@@ -109,14 +109,14 @@ class Database(object):
         sql = "select schedule from schedule where ? < timestamp < ?"
         try:
             self.cursor.execute(sql, (self.time.now_timestamp()-43200, self.time.now_timestamp()+43200))
-            print("{}:Select recent 12h".format(self.time.now_time))
-            self.log.write_log("{}:Select recent 12h".format(self.time.now_time))
+            print("Select recent 12h")
+            self.log.write_log("Select recent 12h")
             rows = self.cursor.fetchall()
             return rows
         except Exception as e:
-            print("{}:Select recent 12h failed![{}]".format(self.time.now_time, e))
-            self.log.write_log("{}:Select recent 12h failed![{}]".format(self.time.now_time, e))
-            return "{}:Select recent 12h failed![{}]".format(self.time.now_time, e)
+            print("Select recent 12h failed![{}]".format(e))
+            self.log.write_log("Select recent 12h failed![{}]".format(e))
+            return "Select recent 12h failed![{}]".format(e)
 
 
 

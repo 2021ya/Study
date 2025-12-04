@@ -8,11 +8,15 @@ class UI(object):
 
     def __init__(self):
         """初始化主窗口UI"""
-        # 时间初始化
-        self.time_label = None
+        # 函数初始化
+        self.time_label = None  # 时间标签
         # 工具初始化
         self.time = logic.Time()
         self.pop_up = PopUp()
+        # 程序文件类初始化
+        self.file = logic.File()  # 文件操作
+        self.log = logic.Log()  # 日志
+        self.database = logic.Database()  # 数据库
         # ui初始化
         self.window_main = tkinter.Tk()  # 创建窗口
         self.window_main.title('SMT Tool @2021')  # 设置标题
@@ -32,8 +36,6 @@ class UI(object):
         self.__show_frame(self.home_frame)
         # B级窗口初始化
         self.B_window = UIB()
-        # 数据库初始化
-        self.database = logic.Database()
 
     def update_time(self):
         """时间标签更新"""
@@ -119,12 +121,12 @@ class UI(object):
 
         data = self.database.select_recent_12h()  # 获取上下12小时的日程
         init_height = 0.1
-        if data is None:
-            tkinter.Label(today_schedule_frame, text="暂无数据").place(relx=0.2, rely=init_height, relwidth=0.6, relheight=0.1)
+        if not data:
+            tkinter.Label(today_schedule_frame, text="暂无数据", font=("Arial", 11)).place(relx=0.05, rely=init_height, relwidth=0.9, relheight=0.15)
         else:
             for i in data:
                 init_height += 0.1
-                tkinter.Checkbutton(today_schedule_frame, text=i).place(relx=0.2, rely=init_height, relwidth=0.6, relheight=0.1)
+                tkinter.Checkbutton(today_schedule_frame, text=i, font=("Arial", 11)).place(relx=0.05, rely=init_height, relwidth=0.9, relheight=0.15)
         return self.home_frame
 
     def schedule(self):
@@ -189,9 +191,11 @@ class UIB(object):
         self.local_window_size = self.window_b.maxsize()  # 获取主机显示器大小
         self.window_b.geometry(
             "{}x{}+{}+{}".format(int(self.local_window_size[0] / 3), int(self.local_window_size[1] / 3),
-                                 int(self.local_window_size[0] / 4), int(self.local_window_size[1] / 4)))  # 按比例缩放程序大小
+                                 int(self.local_window_size[0] / 3), int(self.local_window_size[1] / 3)))  # 按比例缩放程序大小
+        self.window_b.configure(background="#00BFFF")  # 设置背景色
         self.window_b.resizable(False, False)  # 禁止自由缩放窗口大小
-        self.window_b.attributes("-topmost", True)  # 置顶B级窗口
+        self.window_b.transient(window_main)  # 使得子窗口始终在父窗口之上
+        self.window_b.grab_set()  # 模态对话框，锁定与父窗口交互
         # 自定义退出
         self.window_b.protocol("WM_DELETE_WINDOW", self.__close)
 
@@ -205,7 +209,18 @@ class UIB(object):
 
     def __close(self):
         self.check_window_B = False  # 窗口设为为False-未占用
+        self.window_b.grab_release()  # 释放锁定
         self.window_b.destroy()
+
+    def __schedule_save(self, year, month, day, hour, minute, second):
+        if year.isdigit() and month.isdigit() and day.isdigit() and hour.isdigit() and minute.isdigit() and second.isdigit():
+            enter_save = self.pop_up.ask("确认保存吗？")
+            if enter_save is True:
+                self.__close()
+            else:
+                pass
+        else:
+            self.pop_up.information("格式错误，请检查输入！")
 
     def new_schedule(self, window_main):
         """新建日程窗口"""
@@ -213,9 +228,54 @@ class UIB(object):
             self.__init_ui(window_main=window_main)  # 初始化B级窗口
             # 窗口设为为Ture-占用
             self.check_window_B = True
-            # 测试代码
-            label = tkinter.Label(self.window_b, text="这是B级窗口界面", font=("Arial", 11))
-            label.place(relx=0.35, rely=0.4, relwidth=0.5, relheight=0.1)
+            # 日程标签
+            schedule_label = tkinter.Label(self.window_b, text="日程信息", font=("Arial", 13))
+            schedule_label.place(relx=0.1, rely=0.1, relwidth=0.2, relheight=0.1)
+            # 输入框
+            data = tkinter.Entry(self.window_b, font=("Arial", 11))
+            data.place(relx=0.1, rely=0.2, relwidth=0.8, relheight=0.15)
+            # 时间标签
+            time_label = tkinter.Label(self.window_b, text="时间范围", font=("Arial", 13))
+            time_label.place(relx=0.1, rely=0.35, relwidth=0.2, relheight=0.1)
+            # 时间选择框架
+            time_choose_frame = tkinter.Frame(self.window_b, background="#00BFFF")
+            time_choose_frame.place(relx=0.1, rely=0.45, relwidth=0.8, relheight=0.3)
+            # 变量接收
+            year = tkinter.StringVar()
+            month = tkinter.StringVar()
+            day = tkinter.StringVar()
+            hour = tkinter.StringVar()
+            minute = tkinter.StringVar()
+            second = tkinter.StringVar()
+            # 时间标签
+            time_choose_year_label = tkinter.Label(time_choose_frame, text="年:", font=("Arial", 13))  # 年标签
+            time_choose_year_label.place(relx=0.03, rely=0.3, relwidth=0.06, relheight=0.23)
+            time_choose_year_enter = tkinter.Entry(time_choose_frame, font=("Arial", 13), textvariable=year)  # 年输入框
+            time_choose_year_enter.place(relx=0.09, rely=0.3, relwidth=0.11, relheight=0.23)
+            time_choose_month_label = tkinter.Label(time_choose_frame, text="月:", font=("Arial", 13))  # 月标签
+            time_choose_month_label.place(relx=0.20, rely=0.3, relwidth=0.06, relheight=0.23)
+            time_choose_month_enter = tkinter.Entry(time_choose_frame, font=("Arial", 13), textvariable=month)  # 月输入框
+            time_choose_month_enter.place(relx=0.26, rely=0.3, relwidth=0.09, relheight=0.23)
+            time_choose_day_label = tkinter.Label(time_choose_frame, text="日:", font=("Arial", 13))  # 日标签
+            time_choose_day_label.place(relx=0.35, rely=0.3, relwidth=0.06, relheight=0.23)
+            time_choose_day_enter = tkinter.Entry(time_choose_frame, font=("Arial", 13), textvariable=day)  # 日输入框
+            time_choose_day_enter.place(relx=0.41, rely=0.3, relwidth=0.09, relheight=0.23)
+            time_choose_hour_label = tkinter.Label(time_choose_frame, text="时:", font=("Arial", 13))  # 时标签
+            time_choose_hour_label.place(relx=0.50, rely=0.3, relwidth=0.06, relheight=0.23)
+            time_choose_hour_enter = tkinter.Entry(time_choose_frame, font=("Arial", 13), textvariable=hour)  # 时输入框
+            time_choose_hour_enter.place(relx=0.56, rely=0.3, relwidth=0.09, relheight=0.23)
+            time_choose_minute_label = tkinter.Label(time_choose_frame, text="分:", font=("Arial", 13))  # 分标签
+            time_choose_minute_label.place(relx=0.65, rely=0.3, relwidth=0.06, relheight=0.23)
+            time_choose_minute_enter = tkinter.Entry(time_choose_frame, font=("Arial", 13), textvariable=minute)  # 分输入框
+            time_choose_minute_enter.place(relx=0.71, rely=0.3, relwidth=0.09, relheight=0.23)
+            time_choose_second_label = tkinter.Label(time_choose_frame, text="秒:", font=("Arial", 13))  # 秒标签
+            time_choose_second_label.place(relx=0.8, rely=0.3, relwidth=0.06, relheight=0.23)
+            time_choose_second_enter = tkinter.Entry(time_choose_frame, font=("Arial", 13), textvariable=second)  # 分输入框
+            time_choose_second_enter.place(relx=0.86, rely=0.3, relwidth=0.09, relheight=0.23)
+            # 保存按钮
+            save_button = tkinter.Button(self.window_b, text="保存", command=lambda: self.__schedule_save(year.get(), month.get(), day.get(), hour.get(), minute.get(), second.get()))
+            save_button.place(relx=0.75, rely=0.8, relwidth=0.17, relheight=0.12)
+
         elif self.check_window_B is True:
             return
 
@@ -253,5 +313,5 @@ class PopUp(object):
 
 if __name__ == '__main__':
     pop_up = PopUp()
-    pop_up.information("当前文件并不是程序主文件，此文件为程序UI文件，请正确打开此程序！")
+    pop_up.information("当前文件并不是程序主文件，请正确打开此程序！")
 
