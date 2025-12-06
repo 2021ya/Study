@@ -37,11 +37,16 @@ class UI(object):
         # B级窗口初始化
         self.B_window = UIB()
 
-    def update_time(self):
+    def __auto_update_time(self):
         """时间标签更新"""
         now_time = self.time.time()
         self.time_label.config(text=now_time)
-        self.window_main.after(1000, self.update_time)  # 主窗口每一秒执行一次
+        self.window_main.after(1000, self.__auto_update_time)  # 主窗口每一秒执行一次
+
+    def __auto_update_schedule(self, today_schedule_frame):
+        """每3000毫秒执行一次更新日程"""
+        self.__update_schedule(today_schedule_frame)
+        self.window_main.after(3000, lambda: self.__auto_update_schedule(today_schedule_frame))
 
     def __show_frame(self, page):
         """显示页面与侧边栏"""
@@ -68,6 +73,22 @@ class UI(object):
         about.place(relx=0, rely=0.5, relwidth=1, relheight=0.1)
 
         sidebar_frame.place(relx=0, rely=0, relwidth=0.2, relheight=1)
+
+    def __update_schedule(self, today_schedule_frame):
+        """刷新日程"""
+        # 清空日程列表
+        for i in today_schedule_frame.winfo_children():
+            i.destroy()
+        # 重新绘制日程列表
+        data = self.database.select_schedule()  # 获取日程
+        init_height = 0.1
+        if not data:
+            tkinter.Label(today_schedule_frame, text="暂无数据", font=("Arial", 11)).place(relx=0.05, rely=0.2, relwidth=0.9, relheight=0.15)
+        else:
+            tkinter.Label(today_schedule_frame, text="日程信息", font=("Arial", 12), background="#FFFFFF").place(relx=0.25, rely=0.04, relwidth=0.5, relheight=0.15)
+            for i in data:
+                init_height += 0.1
+                tkinter.Checkbutton(today_schedule_frame, text=i, font=("Arial", 11)).place(relx=0.05, rely=init_height, relwidth=0.9, relheight=0.15)
 
     def menu(self):
         """菜单栏"""
@@ -113,20 +134,25 @@ class UI(object):
         # 时间显示
         self.time_label = tkinter.Label(self.home_frame, text=self.time.time(), font=("Arial", 11))  # 创建一个时间标签
         self.time_label.place(relx=0.3, rely=0.02, relwidth=0.6, relheight=0.1)
-        self.update_time()  # 更新时间标签
+        self.__auto_update_time()  # 更新时间标签
+        # 查询日程
+
+        # 新建日程
+
+        # 删除日程
+
+        # 更改日程
 
         # 今日日程
         today_schedule_frame = tkinter.Frame(self.home_frame, background="#FFFFFF")
         today_schedule_frame.place(relx=0.25, rely=0.25, relwidth=0.7, relheight=0.6)  # 今日日程框架
-
-        data = self.database.select_recent_12h()  # 获取上下12小时的日程
-        init_height = 0.1
-        if not data:
-            tkinter.Label(today_schedule_frame, text="暂无数据", font=("Arial", 11)).place(relx=0.05, rely=init_height, relwidth=0.9, relheight=0.15)
-        else:
-            for i in data:
-                init_height += 0.1
-                tkinter.Checkbutton(today_schedule_frame, text=i, font=("Arial", 11)).place(relx=0.05, rely=init_height, relwidth=0.9, relheight=0.15)
+        # 日程信息显示
+        self.__update_schedule(today_schedule_frame)
+        # 刷新按钮
+        update_button = tkinter.Button(self.home_frame, text="刷新", command=lambda: self.__update_schedule(today_schedule_frame))
+        update_button.place(relx=0.85, rely=0.28, relwidth=0.06, relheight=0.06)
+        # 自动更新日程
+        self.__auto_update_schedule(today_schedule_frame)
         return self.home_frame
 
     def schedule(self):
@@ -182,9 +208,11 @@ class UIB(object):
         # ui初始化默认设置
         self.window_b = None
         self.local_window_size = None
+        # 数据库初始化
+        self.database = logic.Database()
 
     def __init_ui(self, window_main):
-        # ui初始化
+        """ui初始化"""
         self.window_b = tkinter.Toplevel(window_main)  # 创建B级窗口
         self.window_b.title('SMT Tool @2021-B级窗口')  # 设置标题
         self.window_b.iconbitmap(r"./resources/images/icon.ico")  # 程序窗口图标
@@ -208,19 +236,30 @@ class UIB(object):
             return False
 
     def __close(self):
+        """窗口关闭时执行"""
         self.check_window_B = False  # 窗口设为为False-未占用
         self.window_b.grab_release()  # 释放锁定
         self.window_b.destroy()
 
-    def __schedule_save(self, year, month, day, hour, minute, second):
-        if year.isdigit() and month.isdigit() and day.isdigit() and hour.isdigit() and minute.isdigit() and second.isdigit():
-            enter_save = self.pop_up.ask("确认保存吗？")
-            if enter_save is True:
-                self.__close()
+    def __schedule_save(self, schedule, year, month, day, hour, minute, second):
+        """传入日程以及年月日时分秒数据，保存到数据库中"""
+        if schedule is None:  # 空日程判断
+            pop_up.information("日程不可为空！")
+        else:  # 时间格式判断
+            if year.isdigit() and month.isdigit() and day.isdigit() and hour.isdigit() and minute.isdigit() and second.isdigit():
+                enter_save = self.pop_up.ask("确认保存吗？")
+                if enter_save is True:
+                    time = year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second
+                    run = self.database.insert_data(schedule, self.time.conversion(time))
+                    if run == "Insert data success!":
+                        self.pop_up.information("数据保存成功")
+                    else:
+                        self.pop_up.error("数据保存失败:{}".format(run))
+                    self.__close()
+                else:
+                    pass
             else:
-                pass
-        else:
-            self.pop_up.information("格式错误，请检查输入！")
+                self.pop_up.information("格式错误，请检查输入！")
 
     def new_schedule(self, window_main):
         """新建日程窗口"""
@@ -232,8 +271,8 @@ class UIB(object):
             schedule_label = tkinter.Label(self.window_b, text="日程信息", font=("Arial", 13))
             schedule_label.place(relx=0.1, rely=0.1, relwidth=0.2, relheight=0.1)
             # 输入框
-            data = tkinter.Entry(self.window_b, font=("Arial", 11))
-            data.place(relx=0.1, rely=0.2, relwidth=0.8, relheight=0.15)
+            schedule_enter = tkinter.Entry(self.window_b, font=("Arial", 11))
+            schedule_enter.place(relx=0.1, rely=0.2, relwidth=0.8, relheight=0.15)
             # 时间标签
             time_label = tkinter.Label(self.window_b, text="时间范围", font=("Arial", 13))
             time_label.place(relx=0.1, rely=0.35, relwidth=0.2, relheight=0.1)
@@ -273,7 +312,7 @@ class UIB(object):
             time_choose_second_enter = tkinter.Entry(time_choose_frame, font=("Arial", 13), textvariable=second)  # 分输入框
             time_choose_second_enter.place(relx=0.86, rely=0.3, relwidth=0.09, relheight=0.23)
             # 保存按钮
-            save_button = tkinter.Button(self.window_b, text="保存", command=lambda: self.__schedule_save(year.get(), month.get(), day.get(), hour.get(), minute.get(), second.get()))
+            save_button = tkinter.Button(self.window_b, text="保存", command=lambda: self.__schedule_save(schedule_enter.get(), year.get(), month.get(), day.get(), hour.get(), minute.get(), second.get()))
             save_button.place(relx=0.75, rely=0.8, relwidth=0.17, relheight=0.12)
 
         elif self.check_window_B is True:

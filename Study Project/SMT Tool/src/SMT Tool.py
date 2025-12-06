@@ -14,7 +14,10 @@ class Main(object):
         self.log = logic.Log()  # 日志
 
     def main(self):
-        self.ui.main()
+        try:
+            self.ui.main()
+        except Exception as e:
+            self.ui.pop_up.error("遇到未知错误！[{}]".format(e))
 
 
 if __name__ == '__main__':

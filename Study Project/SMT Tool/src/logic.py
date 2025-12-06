@@ -43,6 +43,12 @@ class Time(object):
         """返回当前时间戳"""
         return int(time.time())
 
+    @staticmethod
+    def conversion(str_time):
+        """格式化时间转为字符串"""
+        timestamp = time.mktime(time.strptime(str_time, "%Y-%m-%d %H:%M:%S"))
+        return timestamp
+
 
 class Log(object):
     """日志操作类，包括日志中的所有操作"""
@@ -76,47 +82,63 @@ class Database(object):
         self.db = sqlite3.connect(r"./data/databases/data.db")  # 连接数据库，若不存在创建数据库
         self.cursor = self.db.cursor()  # 创建数据库游标
         # 如果不存在数据表，就创建，其中包括id(整数类型，自增，主键，唯一)、schedule(文本类型150字符)、time(文本类型)、finish(整数类型,默认值0-未完成)
-        sql = "create table if not exists schedule(id integer auto_increment primary key unique not null, schedule text(150), time text(20), timestamp integer, finish integer default 0)"
+        sql = "create table if not exists schedule(id INTEGER PRIMARY KEY AUTOINCREMENT, schedule text(150), add_time integer, start_time integer, finish integer default 0)"
         try:
             self.cursor.execute(sql)
             self.db.commit()
         except Exception as e:
-            print("Database init failed:{}".format(e))
-            self.log.write_log("Database init failed:{}".format(e))
+            print("Database init failed[Error:{}]--run_sql:{}".format(e, sql))
+            self.log.write_log("Database init failed[Error:{}]--run_sql:{}".format(e, sql))
             self.db.rollback()
 
-    def insert_data(self, data):
-        sql = "insert into schedule(schedule, time, timestamp, finish) values(?, ?, ?, ?)"
-        if not type(data) is list:
-            return "The data is a list type"
+    def insert_data(self, data, start_time):
+        """写入数据库数据"""
+        sql = "insert into schedule(schedule, add_time, start_time, finish) values(?, ?, ?, ?)"
+        # if not type(data) is list:
+        #     return "The data is a list type"
         try:
-            self.cursor.execute(sql, (data, self.time.time(), self.time.now_timestamp(), 0))
+            self.cursor.execute(sql, (data, self.time.now_timestamp(), start_time, 0))
             self.db.commit()
-            print("Insert data success")
-            self.log.write_log("{}:Insert data success".format("<system>"))
-            return "Insert data success"
+            print("Insert data success!--run_sql:{}".format(sql))
+            self.log.write_log("Insert data success!--run_sql:{}".format(sql))
+            return "Insert data success!"
         except Exception as e:
-            self.log.write_log("Insert data failed,[{}]".format(e))
-            print("Insert data failed,[{}]".format(e))
+            print("Insert data failed,[Error:{}]--run_sql:{}".format(e, sql))
+            self.log.write_log("Insert data failed,[Error:{}]--run_sql:{}".format(e, sql))
             self.db.rollback()
-            return "Insert data failed,[{}]".format(e)
+            return "Insert data failed,[Error:{}]--run_sql:{}".format(e, sql)
 
     def select_data(self, data):
         pass
 
-    def select_recent_12h(self):
-        """查询离当前距离12小时的日程"""
-        sql = "select schedule from schedule where ? < timestamp < ?"
-        try:
-            self.cursor.execute(sql, (self.time.now_timestamp()-43200, self.time.now_timestamp()+43200))
-            print("Select recent 12h")
-            self.log.write_log("Select recent 12h")
-            rows = self.cursor.fetchall()
-            return rows
-        except Exception as e:
-            print("Select recent 12h failed![{}]".format(e))
-            self.log.write_log("Select recent 12h failed![{}]".format(e))
-            return "Select recent 12h failed![{}]".format(e)
+    def select_schedule(self, start_time=None, end_time=None):
+        """查询日程,默认查询所有日程，若输入开始时间和结束时间，那么可以查询指定时间的日程"""
+        if start_time is None and end_time is None:  # 查询所有时间
+            sql = "select schedule from schedule"
+            try:
+                self.cursor.execute(sql)
+                return self.cursor.fetchall()
+            except Exception as e:
+                print("Select schedule failed,[Error:{}]--run_sql:{}".format(e, sql))
+                self.log.write_log("Select schedule failed,[Error:{}]--run_sql:{}".format(e, sql))
+                return "Select schedule failed,[Error:{}]--run_sql:{}".format(e, sql)
+        elif start_time is not None and end_time is not None:  # 查询指定时间区间的日程
+            if start_time < end_time:
+                sql = "select schedule from schedule where start_time between ? and ?"
+                try:
+                    self.cursor.execute(sql, (start_time, end_time))
+                    print("Select schedule:[{}-{}]--run_sql:{}".format(start_time, end_time, sql))
+                    self.log.write_log("Select schedule:[{}-{}]--run_sql:{}".format(start_time, end_time, sql))
+                    rows = self.cursor.fetchall()
+                    return rows
+                except Exception as e:
+                    print("Select schedule [{}-{}] failed![Error:{}]".format(start_time, end_time, e))
+                    self.log.write_log("Select schedule [{}-{}] failed![Error:{}]".format(start_time, end_time, e))
+                    return "Select schedule [{}-{}] failed![Error:{}]".format(start_time, end_time, e)
+            elif start_time > end_time:  # 开始时间大于结束时间检查
+                print("[Error:{} > {}]".format(start_time, end_time))
+                self.log.write_log("[Error:{} > {}]".format(start_time, end_time))
+                return "[Error:{} > {}]".format(start_time, end_time)
 
 
 
