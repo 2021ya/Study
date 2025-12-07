@@ -37,16 +37,30 @@ class UI(object):
         # B级窗口初始化
         self.B_window = UIB()
 
+    @staticmethod
+    def __update_scrollregion(canvas):
+        """传入画布，更新滚动区域"""
+        bbox = canvas.bbox("all")
+        canvas.configure(scrollregion=bbox)  # 获取画布包所有组件的最小矩形，然后将画图滚动区域调整为此矩形
+
+    @staticmethod
+    def __on_mouse_wheel(event, canvas):  # event事件tkinter自己有了，会接收所有操作记录
+        """鼠标滚轮事件处理"""
+        if event.delta > 0:  # 向上滚动
+            canvas.yview_scroll(-1, "units")  # 视图向下移动1单位
+        elif event.delta < 0:  # 向下滚动
+            canvas.yview_scroll(1, "units")  # 视图向上移动1单位
+
     def __auto_update_time(self):
         """时间标签更新"""
         now_time = self.time.time()
         self.time_label.config(text=now_time)
         self.window_main.after(1000, self.__auto_update_time)  # 主窗口每一秒执行一次
 
-    def __auto_update_schedule(self, today_schedule_frame):
+    def __auto_update_schedule(self, inner_frame, canvas):
         """每3000毫秒执行一次更新日程"""
-        self.__update_schedule(today_schedule_frame)
-        self.window_main.after(3000, lambda: self.__auto_update_schedule(today_schedule_frame))
+        self.__update_schedule(inner_frame, canvas)
+        self.window_main.after(3000, lambda: self.__auto_update_schedule(inner_frame, canvas))
 
     def __show_frame(self, page):
         """显示页面与侧边栏"""
@@ -74,21 +88,23 @@ class UI(object):
 
         sidebar_frame.place(relx=0, rely=0, relwidth=0.2, relheight=1)
 
-    def __update_schedule(self, today_schedule_frame):
-        """刷新日程"""
+    def __update_schedule(self, inner_frame, canvas):
+        """传入内容框架、画布，刷新日程"""
         # 清空日程列表
-        for i in today_schedule_frame.winfo_children():
+        for i in inner_frame.winfo_children():
             i.destroy()
         # 重新绘制日程列表
         data = self.database.select_schedule()  # 获取日程
         init_height = 0.1
         if not data:
-            tkinter.Label(today_schedule_frame, text="暂无数据", font=("Arial", 11)).place(relx=0.05, rely=0.2, relwidth=0.9, relheight=0.15)
+            tkinter.Label(inner_frame, text="暂无数据", font=("Arial", 11)).place(relx=0.05, rely=0.2, relwidth=0.9, relheight=0.15)
         else:
-            tkinter.Label(today_schedule_frame, text="日程信息", font=("Arial", 12), background="#FFFFFF").place(relx=0.25, rely=0.04, relwidth=0.5, relheight=0.15)
+            tkinter.Label(inner_frame, text="日程信息", font=("Arial", 12), background="#FFFFFF").place(relx=0.25, rely=0.04, relwidth=0.5, relheight=0.15)
             for i in data:
                 init_height += 0.1
-                tkinter.Checkbutton(today_schedule_frame, text=i, font=("Arial", 11)).place(relx=0.05, rely=init_height, relwidth=0.9, relheight=0.15)
+                tkinter.Checkbutton(inner_frame, text=i, font=("Arial", 11)).place(relx=0.05, rely=init_height, relwidth=0.9, relheight=0.15)
+        # 滚动区域更新
+        self.__update_scrollregion(canvas)
 
     def menu(self):
         """菜单栏"""
@@ -143,16 +159,34 @@ class UI(object):
 
         # 更改日程
 
-        # 今日日程
+        # 今日日程框架
         today_schedule_frame = tkinter.Frame(self.home_frame, background="#FFFFFF")
-        today_schedule_frame.place(relx=0.25, rely=0.25, relwidth=0.7, relheight=0.6)  # 今日日程框架
+        today_schedule_frame.place(relx=0.25, rely=0.25, relwidth=0.7, relheight=0.6)
+        # 创建画布
+        canvas = tkinter.Canvas(today_schedule_frame, background="#FFFFFF")
+        # 创建滚动条
+        scrollbar = tkinter.Scrollbar(today_schedule_frame)
+        # 画布与滚动条相互绑定
+        canvas.configure(yscrollcommand=scrollbar.set)  # 当视图移动时，移动滚动条
+        scrollbar.config(command=canvas.yview)  # 当滚动条移动时，移动视图
+        # 内容框架
+        inner_frame = tkinter.Frame(canvas, background="#FFFFFF", width=self.local_window_size[0] * 0.7)
+        # 画布窗口
+        canvas.create_window((0, 0), window=inner_frame, anchor=tkinter.NW)  # 第一个是画布窗口坐标起始点为画布的00点，第二个是窗口中放个框架，第三个是组件布局起始点，左上角开始
+        # 布局画布与滚动条
+        canvas.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=True)
+        scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+        # 立即计算框架大小
+        inner_frame.update_idletasks()
         # 日程信息显示
-        self.__update_schedule(today_schedule_frame)
+        self.__update_schedule(inner_frame, canvas)
         # 刷新按钮
         update_button = tkinter.Button(self.home_frame, text="刷新", command=lambda: self.__update_schedule(today_schedule_frame))
         update_button.place(relx=0.85, rely=0.28, relwidth=0.06, relheight=0.06)
+        # 绑定鼠标滚轮事件
+        canvas.bind("<MouseWheel>", lambda event: self.__on_mouse_wheel(event, canvas))
         # 自动更新日程
-        self.__auto_update_schedule(today_schedule_frame)
+        self.__auto_update_schedule(today_schedule_frame, canvas)
         return self.home_frame
 
     def schedule(self):
